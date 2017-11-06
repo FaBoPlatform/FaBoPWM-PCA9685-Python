@@ -1,4 +1,5 @@
 # coding: utf-8
+# python TestPCA9685.py
 import unittest
 import Fabo_PCA9685
 import time
@@ -6,7 +7,6 @@ import time
 import pkg_resources
 SMBUS='smbus'
 for dist in pkg_resources.working_set:
-    #print(dist.project_name, dist.version)
     if dist.project_name == 'smbus':
         break
     if dist.project_name == 'smbus2':
@@ -16,7 +16,6 @@ if SMBUS == 'smbus':
     import smbus
 elif SMBUS == 'smbus2':
     import smbus2 as smbus
-    #import Adafruit_PureIO.smbus as smbus
 
 
 class TestPCA9685(unittest.TestCase):
@@ -38,40 +37,34 @@ class TestPCA9685(unittest.TestCase):
         PCA9685 Hz設定
         '''
         hz = 60
-        prescale = self.PCA9685.calc_prescale(hz)
-        self.PCA9685.set_prescale(prescale)
-        value = self.PCA9685.get_prescale()
-        self.assertEqual(prescale, value)
-        
+        self.PCA9685.set_hz(hz)
+        value = self.PCA9685.get_hz()
+        self.assertEqual(hz, value)
+
         return
 
     @unittest.skip("skipping")
-    def test_set_prescale(self):
-        hz = 60
-        prescale = self.PCA9685.calc_prescale(hz)
-        self.PCA9685.set_prescale(prescale)
-        value = self.PCA9685.get_prescale()
-        self.assertEqual(prescale, value)
-        return
-
-    def test_set_freq(self):
+    def test_set_hz(self):
         hz = 61
-        prescale = self.PCA9685.calc_prescale(hz)
-        self.PCA9685.set_freq(hz)
-        value = self.PCA9685.get_prescale()
-        self.assertEqual(prescale, value)
+        self.PCA9685.set_hz(hz)
+        value = self.PCA9685.get_hz()
+        self.assertEqual(hz, value)
         return
 
     @unittest.skip("skipping")
-    def test_set_prescale_loop(self):
+    def test_set_hz_loop(self):
         min_hz = 24
-        max_hz = 1000
+        max_hz = 1526
         for hz in range(min_hz,max_hz+1):
-            prescale = self.PCA9685.calc_prescale(hz)
-            self.PCA9685.set_prescale(prescale)
-            value = self.PCA9685.get_prescale()
-            self.assertEqual(prescale, value)
+            self.PCA9685.set_hz(hz)
+            value = self.PCA9685.get_hz()
+            self.assertEqual(hz, value)
         return
+
+    def test_get_mode1(self):
+        mode1 = 129 # ALLCALL(0x01=1) | RESTART(0x80=128) Hz設定
+        value = self.PCA9685.get_mode1()
+        self.assertEqual(mode1, value)
 
     def test_channel_value_min(self):
         min_value = 150

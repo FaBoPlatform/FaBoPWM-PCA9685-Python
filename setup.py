@@ -18,7 +18,7 @@ classifiers = ['Development Status :: 4 - Beta',
 
 setup(
     name         = 'Fabo_PCA9685',
-    version      = '0.2',
+    version      = '0.3',
     author       = 'FaBo',
     author_email = 'info@fabo.io',
     description  = "This is a library for the PCA9685.",

@@ -9,7 +9,7 @@ class PCA9685(object):
     # Value of servlo
     MODE1 = 0x00
     MODE2 = 0x01
-    OSC_CLOCK = 25000000
+    OSC_CLOCK = 25000000.0
 
     LED0_ON_L = 0x06
     LED0_ON_H = 0x07
@@ -21,6 +21,7 @@ class PCA9685(object):
     # MODE1 Bit
     RESTART = 0x80
     SLEEP = 0x10
+    ALLCALL = 0x01
 
     # PWMを50Hzに設定
     PWM_HZ = 50
@@ -125,26 +126,24 @@ class PCA9685(object):
     OUTDRV = 0x04 # 2bit
     '''
 
-    # シングルトンクラス
-    __instance = None
-    # ロックオブジェクト
-    __lock = threading.Lock()
-
 
     def __init__(self, bus):
         self.bus = bus
+
+        #mode1 = self.get_mode1()
+        #print("before mode1:{}".format(mode1))
+        
+        self.bus.write_byte_data(self.PCA9685_ADDRESS, self.MODE1, self.ALLCALL)
+        time.sleep(self.WAIT_TIME)
+
+        #mode1 = self.get_mode1()
+        #print("after mode1:{}".format(mode1))
+
         #frequency設定はinitを抜けてから行うこと。
         # ex.
         # pca9685 = PCA9685()
         # hz = 60
-        # prescale = pca9685.calc_prescale(hz)
-        # pca9685.set_prescale(prescale)
-
-    def __new__(cls, *args, **kwargs):
-        with cls.__lock:
-            if cls.__instance is None:
-                cls.__instance = object.__new__(cls)
-            return cls.__instance
+        # pca9685.set_hz(hz)
 
     def calc_prescale(self, hz):
         '''
@@ -157,67 +156,85 @@ class PCA9685(object):
         prescaleをhzに変換した値を返す
         誤差が出てしまうので参考値程度に
         '''
-        return int(round(self.OSC_CLOCK/4096/(prescale+1)))
+        d = None
+        if (prescale +1) % 2 == 0:
+            d = 0.5
+        else:
+            d = 4.999999e-1
 
-    def set_prescale(self, prescale):
+        hz_min = int(self.OSC_CLOCK/4096/(prescale+1+d))
+        hz_max = int(self.OSC_CLOCK/4096/(prescale+1-d))
+        return hz_min, hz_max
+
+    def set_hz(self, hz):
+        self.PWM_HZ = hz
+        prescale=self.calc_prescale(hz)
         '''
-        Hz設定。prescale値を引数に取る
+        Hz設定。レジスタに書き込む値はprescaleの値となる
         prescale = calc_prescale(hz)
-        set_prescale(prescale)
         '''
-        with self.__lock:
-            oldmode = self.bus.read_word_data(self.PCA9685_ADDRESS,self.MODE1)
-            newmode = oldmode | self.SLEEP # sleep
+        oldmode = self.bus.read_byte_data(self.PCA9685_ADDRESS,self.MODE1)
+        newmode = oldmode | self.SLEEP # sleep
 
-            print("prescale:{}".format(prescale))
-            print("oldmode:{}".format(oldmode))
-            print("newmode:{}".format(newmode))
-            # スリープにする
-            self.bus.write_byte_data(self.PCA9685_ADDRESS, self.MODE1, newmode)
-            #周波数を設定
-            self.bus.write_byte_data(self.PCA9685_ADDRESS, self.PRE_SCALE, prescale)
-            #スリープを解除
-            self.bus.write_byte_data(self.PCA9685_ADDRESS, self.MODE1, oldmode)
-            time.sleep(self.WAIT_TIME)
-            # リスタートする（必須）
-            self.bus.write_byte_data(self.PCA9685_ADDRESS, self.MODE1, (oldmode | self.RESTART))
+        #print("prescale:{}".format(prescale))
+        #print("oldmode:{}".format(oldmode))
+        #print("newmode:{}".format(newmode))
+        # スリープにする
+        self.bus.write_byte_data(self.PCA9685_ADDRESS, self.MODE1, newmode)
+        #周波数を設定
+        self.bus.write_byte_data(self.PCA9685_ADDRESS, self.PRE_SCALE, prescale)
+        #スリープを解除
+        self.bus.write_byte_data(self.PCA9685_ADDRESS, self.MODE1, oldmode)
+        time.sleep(self.WAIT_TIME)
+        # リスタートする（必須）
+        self.bus.write_byte_data(self.PCA9685_ADDRESS, self.MODE1, (oldmode | self.RESTART))
 
+    def get_hz(self):
+        '''
+        設定されているprescale値を取得し、保持しているPWM_HZと一致するかどうかを計算し、
+        一致している場合はPWM_HZを返す
+        それ以外は推定HZ範囲の中間値を返す
+        '''
+        value = None
+        prescale = self.bus.read_byte_data(self.PCA9685_ADDRESS, self.PRE_SCALE) # レジストリのprescale値
+        _prescale = self.calc_prescale(self.PWM_HZ) # 保持しているhzからprescale値算出
+        if _prescale == prescale:
+            value = self.PWM_HZ
+        else:
+            values = self.calc_hz(prescale)
+            value0 = self.calc_prescale(values[0])
+            value1 = self.calc_prescale(values[1])
+
+            value = int((value0 + value1)/2)
+
+        return value
 
     def get_prescale(self):
-        with self.__lock:
-            prescale = self.bus.read_byte_data(self.PCA9685_ADDRESS, self.PRE_SCALE)
-            return prescale
+        '''
+        設定されているprescale値を取得する
+        prescale値はset_freq(hz)で設定するが、引数となるhzを正確に逆算する方法を思いつかないため、
+        実際にレジストリに書かれているprescale値を返す
+        '''
+        prescale = self.bus.read_byte_data(self.PCA9685_ADDRESS, self.PRE_SCALE)
+        return prescale
 
     def get_channel_value(self, channel):
-        with self.__lock:
-            list_of_bytes = 1 # 1byteだけ取る
-            block0 = self.bus.read_i2c_block_data(self.PCA9685_ADDRESS,self.LED0_OFF_L+channel*4,list_of_bytes) # 0-255
-            block256 = self.bus.read_i2c_block_data(self.PCA9685_ADDRESS,self.LED0_OFF_H+channel*4,list_of_bytes) # 桁上がり
-            value = (block256[0]<<8) + block0[0]
-            return value
+        list_of_bytes = 1 # 1byteだけ取る
+        block0 = self.bus.read_i2c_block_data(self.PCA9685_ADDRESS,self.LED0_OFF_L+channel*4,list_of_bytes) # 0-255
+        block256 = self.bus.read_i2c_block_data(self.PCA9685_ADDRESS,self.LED0_OFF_H+channel*4,list_of_bytes) # 桁上がり
+        value = (block256[0]<<8) + block0[0]
+        return value
 
     def set_channel_value(self, channel, value):
-        with self.__lock:
-            setval=int(value)
-            # 最初からオン
-            self.bus.write_i2c_block_data(self.PCA9685_ADDRESS,self.LED0_ON_L+channel*4,[0x00])
-            self.bus.write_i2c_block_data(self.PCA9685_ADDRESS,self.LED0_ON_H+channel*4,[0x00])
-            # Value％経過後にオフ
-            self.bus.write_i2c_block_data(self.PCA9685_ADDRESS,self.LED0_OFF_L+channel*4,[setval & 0xff])
-            self.bus.write_i2c_block_data(self.PCA9685_ADDRESS,self.LED0_OFF_H+channel*4,[setval>>8])
+        setval=int(value)
+        # 最初からオン
+        self.bus.write_i2c_block_data(self.PCA9685_ADDRESS,self.LED0_ON_L+channel*4,[0x00])
+        self.bus.write_i2c_block_data(self.PCA9685_ADDRESS,self.LED0_ON_H+channel*4,[0x00])
+        # Value％経過後にオフ
+        self.bus.write_i2c_block_data(self.PCA9685_ADDRESS,self.LED0_OFF_L+channel*4,[setval & 0xff])
+        self.bus.write_i2c_block_data(self.PCA9685_ADDRESS,self.LED0_OFF_H+channel*4,[setval>>8])
 
-    def set_freq(self, hz):
-        '''廃止予定'''
-        with self.__lock:
-            prescale=int(round(self.OSC_CLOCK/4096/hz)-1)
-            oldmode = self.bus.read_word_data(self.PCA9685_ADDRESS,self.MODE1)
-            newmode = oldmode | self.SLEEP # sleep
+    def get_mode1(self):
+        mode1 = self.bus.read_byte_data(self.PCA9685_ADDRESS,self.MODE1)
+        return mode1
 
-            # スリープにする
-            self.bus.write_byte_data(self.PCA9685_ADDRESS, self.MODE1, newmode)
-            #周波数を設定
-            self.bus.write_byte_data(self.PCA9685_ADDRESS, self.PRE_SCALE, prescale)
-            #スリープを解除
-            self.bus.write_byte_data(self.PCA9685_ADDRESS, self.MODE1, oldmode)
-            time.sleep(self.WAIT_TIME)
-            self.bus.write_byte_data(self.PCA9685_ADDRESS, self.MODE1, (oldmode | self.RESTART))
