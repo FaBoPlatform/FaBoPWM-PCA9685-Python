@@ -62,7 +62,7 @@ class TestPCA9685(unittest.TestCase):
         return
 
     def test_get_mode1(self):
-        mode1 = 129 # ALLCALL(0x01=1) | RESTART(0x80=128) Hz設定
+        mode1 = 1 # ALLCALL(0x01=1) | RESTART(0x80=128) Hz設定
         value = self.PCA9685.get_mode1()
         self.assertEqual(mode1, value)
 
