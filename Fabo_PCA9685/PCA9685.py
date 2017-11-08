@@ -16,12 +16,21 @@ class PCA9685(object):
     LED0_OFF_L = 0x08
     LED0_OFF_H = 0x09
 
+    # PCA9685に電源を入れたときに、全部の値を初期化する際に用いる
+    ALL_LED_ON_L = 0xFA
+    ALL_LED_ON_H = 0xFB
+    ALL_LED_OFF_L = 0xFC
+    ALL_LED_OFF_H = 0xFD
+
     PRE_SCALE = 0xFE
 
     # MODE1 Bit
     RESTART = 0x80
     SLEEP = 0x10
     ALLCALL = 0x01
+
+    # MODE2 Bit
+    OUTDRV = 0x04
 
     # PWMを50Hzに設定
     PWM_HZ = 50
@@ -132,12 +141,24 @@ class PCA9685(object):
 
         #mode1 = self.get_mode1()
         #print("before mode1:{}".format(mode1))
-        
+
+        # PCA9685 全channelの値を初期化する
+        # 通電時、PCA9685の全channleの値は、サーボ稼働範囲外の4096になっているのでこれを適切な範囲に設定しておく
+        self.bus.write_byte_data(self.PCA9685_ADDRESS,self.ALL_LED_ON_L,0x00)
+        self.bus.write_byte_data(self.PCA9685_ADDRESS,self.ALL_LED_ON_H,0x00)
+        self.bus.write_byte_data(self.PCA9685_ADDRESS,self.ALL_LED_OFF_L,(300 & 0xFF))
+        self.bus.write_byte_data(self.PCA9685_ADDRESS,self.ALL_LED_OFF_H,(300 >> 8))
+
+        self.bus.write_byte_data(self.PCA9685_ADDRESS, self.MODE2, self.OUTDRV)
         self.bus.write_byte_data(self.PCA9685_ADDRESS, self.MODE1, self.ALLCALL)
         time.sleep(self.WAIT_TIME)
 
-        #mode1 = self.get_mode1()
-        #print("after mode1:{}".format(mode1))
+        # スリープ状態なら解除する
+        mode = self.bus.read_byte_data(self.PCA9685_ADDRESS,self.MODE1)
+        mode = mode & ~self.SLEEP # SLEEPビットを除去する
+        self.bus.write_byte_data(self.PCA9685_ADDRESS, self.MODE1, mode)
+        time.sleep(self.WAIT_TIME)
+
 
         #frequency設定はinitを抜けてから行うこと。
         # ex.
@@ -219,22 +240,53 @@ class PCA9685(object):
         return prescale
 
     def get_channel_value(self, channel):
+        '''
+        1byteの値を読み込む
+        channel: PCA9685に接続しているPWM番号
+        return: PCA9685に設定されているパルス幅
+        '''
+        block0 = self.bus.read_byte_data(self.PCA9685_ADDRESS, self.LED0_OFF_L+channel*4) # 0-255
+        block256 = self.bus.read_byte_data(self.PCA9685_ADDRESS, self.LED0_OFF_H+channel*4) # 桁上がり
+        value = (block256<<8) + block0
+        ''' or
+        read_word_data()は2byteを返すが、1byteしか要らないので削る。
+        PCA9685は1byteしかレジスタ値を持っていないが、i2cは1byteを繰り返して2byteを返す
+        block0 = self.bus.read_word_data(self.PCA9685_ADDRESS, self.LED0_OFF_L+channel*4) & 0xFF # 0-255
+        block256 = self.bus.read_word_data(self.PCA9685_ADDRESS, self.LED0_OFF_H+channel*4) & 0xFF # 桁上がり
+        value = (block256<<8) + block0
+        '''
+        ''' or
+        read_i2c_block_data()は指定したbyte数をバイト配列で返す。1byteしか要らない。16byteを指定しても同じ値が16個並ぶだけ。
         list_of_bytes = 1 # 1byteだけ取る
         block0 = self.bus.read_i2c_block_data(self.PCA9685_ADDRESS,self.LED0_OFF_L+channel*4,list_of_bytes) # 0-255
         block256 = self.bus.read_i2c_block_data(self.PCA9685_ADDRESS,self.LED0_OFF_H+channel*4,list_of_bytes) # 桁上がり
         value = (block256[0]<<8) + block0[0]
+        '''
         return value
 
     def set_channel_value(self, channel, value):
-        setval=int(value)
-        # 最初からオン
+        '''
+        1byteの値を書き込む
+        channel: PCA9685に接続しているPWM番号
+        value: パルス幅
+        '''
+        value=int(value)
+
+        self.bus.write_byte_data(self.PCA9685_ADDRESS, self.LED0_ON_L+channel*4,0x00)
+        self.bus.write_byte_data(self.PCA9685_ADDRESS, self.LED0_ON_H+channel*4,0x00)
+        self.bus.write_byte_data(self.PCA9685_ADDRESS, self.LED0_OFF_L+channel*4,(value & 0xFF))
+        self.bus.write_byte_data(self.PCA9685_ADDRESS, self.LED0_OFF_H+channel*4,(value >> 8))
+        ''' or 
         self.bus.write_i2c_block_data(self.PCA9685_ADDRESS,self.LED0_ON_L+channel*4,[0x00])
         self.bus.write_i2c_block_data(self.PCA9685_ADDRESS,self.LED0_ON_H+channel*4,[0x00])
-        # Value％経過後にオフ
-        self.bus.write_i2c_block_data(self.PCA9685_ADDRESS,self.LED0_OFF_L+channel*4,[setval & 0xff])
-        self.bus.write_i2c_block_data(self.PCA9685_ADDRESS,self.LED0_OFF_H+channel*4,[setval>>8])
+        self.bus.write_i2c_block_data(self.PCA9685_ADDRESS,self.LED0_OFF_L+channel*4,[value & 0xFF])
+        self.bus.write_i2c_block_data(self.PCA9685_ADDRESS,self.LED0_OFF_H+channel*4,[value >> 8])
+        '''
 
     def get_mode1(self):
+        '''
+        MODE1のアドレス値を取得する
+        '''
         mode1 = self.bus.read_byte_data(self.PCA9685_ADDRESS,self.MODE1)
         return mode1
 
