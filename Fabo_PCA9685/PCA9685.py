@@ -142,6 +142,7 @@ class PCA9685(object):
         value: PCA9685に書き込む初期サーボ位置
         '''
         self.bus = bus
+        value = int(value)
 
         #mode1 = self.get_mode1()
         #print("before mode1:{}".format(mode1))
