@@ -25,7 +25,8 @@ class TestPCA9685(unittest.TestCase):
         smbus準備
         '''
         busnum = 1 # bus番号
-        self.bus = smbus.SMBus(busnum)
+        init_value = 300 # 初期サーボ位置
+        self.bus = smbus.SMBus(busnum,300)
         self.assertNotEqual(self.bus, None)
         '''
         PCA9685準備

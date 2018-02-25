@@ -136,8 +136,13 @@ class PCA9685(object):
     '''
 
 
-    def __init__(self, bus):
+    def __init__(self, bus,value=300):
+        '''
+        bus: bus番号
+        value: PCA9685に書き込む初期サーボ位置
+        '''
         self.bus = bus
+        value = int(value)
 
         #mode1 = self.get_mode1()
         #print("before mode1:{}".format(mode1))
@@ -146,8 +151,8 @@ class PCA9685(object):
         # 通電時、PCA9685の全channleの値は、サーボ稼働範囲外の4096になっているのでこれを適切な範囲に設定しておく
         self.bus.write_byte_data(self.PCA9685_ADDRESS,self.ALL_LED_ON_L,0x00)
         self.bus.write_byte_data(self.PCA9685_ADDRESS,self.ALL_LED_ON_H,0x00)
-        self.bus.write_byte_data(self.PCA9685_ADDRESS,self.ALL_LED_OFF_L,(300 & 0xFF))
-        self.bus.write_byte_data(self.PCA9685_ADDRESS,self.ALL_LED_OFF_H,(300 >> 8))
+        self.bus.write_byte_data(self.PCA9685_ADDRESS,self.ALL_LED_OFF_L,(value & 0xFF))
+        self.bus.write_byte_data(self.PCA9685_ADDRESS,self.ALL_LED_OFF_H,(value >> 8))
 
         self.bus.write_byte_data(self.PCA9685_ADDRESS, self.MODE2, self.OUTDRV)
         self.bus.write_byte_data(self.PCA9685_ADDRESS, self.MODE1, self.ALLCALL)
