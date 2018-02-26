@@ -60,6 +60,6 @@ print(value)
 # PCA9685.set_channel_value(channel,value)
 
 | variable      | value         | 
-| ------------- |:-------------:|
+| ------------- |:--------------|
 | channel       | PWMのPIN番号   |
 | value         | 初期値         |
