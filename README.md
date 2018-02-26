@@ -64,4 +64,8 @@ print(value)
 |channel|PWMのPIN番号|
 |value|初期値|
 
-
+| Tables        | Are           | Cool  |
+| ------------- |:-------------:| -----:|
+| col 3 is      | right-aligned | $1600 |
+| col 2 is      | centered      |   $12 |
+| zebra stripes | are neat      |    $1 |
