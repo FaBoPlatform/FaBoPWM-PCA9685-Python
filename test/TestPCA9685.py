@@ -69,7 +69,7 @@ class TestPCA9685(unittest.TestCase):
 
     def test_channel_value_min(self):
         min_value = 150
-        channel = 2
+        channel = 0 # PWM0番目のピンのサーボ
         self.PCA9685.set_channel_value(channel,min_value)
         value = self.PCA9685.get_channel_value(channel)
         self.assertEqual(min_value, value)
@@ -77,7 +77,7 @@ class TestPCA9685(unittest.TestCase):
 
     def test_channel_value_cen(self):
         cen_value = 300
-        channel = 2
+        channel = 0 # PWM0番目のピンのサーボ
         self.PCA9685.set_channel_value(channel,cen_value)
         value = self.PCA9685.get_channel_value(channel)
         self.assertEqual(cen_value, value)
@@ -85,7 +85,7 @@ class TestPCA9685(unittest.TestCase):
 
     def test_channel_value_max(self):
         max_value = 600
-        channel = 2
+        channel = 0 # PWM0番目のピンのサーボ
         self.PCA9685.set_channel_value(channel,max_value)
         value = self.PCA9685.get_channel_value(channel)
         self.assertEqual(max_value, value)
