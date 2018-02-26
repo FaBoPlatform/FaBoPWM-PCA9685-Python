@@ -62,4 +62,4 @@ print(value)
 | variable      | value         | 
 | ------------- |:--------------|
 | channel       | PWMのPIN番号   |
-| value         | 初期値         |
+| value         | 値            |
