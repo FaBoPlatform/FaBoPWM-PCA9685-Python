@@ -30,10 +30,10 @@ elif SMBUS == 'smbus2':
     import smbus2 as smbus
 
 # init
-busnum=1
+BUSNUM=1
 SERVO_HZ=50
 INITIAL_VALUE=300
-bus = smbus.SMBus(busnum)
+bus = smbus.SMBus(BUSNUM)
 PCA9685 = Fabo_PCA9685.PCA9685(bus,INITIAL_VALUE)
 PCA9685.set_hz(SERVO_HZ)
 
