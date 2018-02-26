@@ -59,13 +59,7 @@ print(value)
 
 # PCA9685.set_channel_value(channel,value)
 
-|variable|value|
-|:__|:__|
-|channel|PWMのPIN番号|
-|value|初期値|
-
-| Tables        | Are           | Cool  |
-| ------------- |:-------------:| -----:|
-| col 3 is      | right-aligned | $1600 |
-| col 2 is      | centered      |   $12 |
-| zebra stripes | are neat      |    $1 |
+| variable      | value         | 
+| ------------- |:-------------:|
+| channel       | PWMのPIN番号   |
+| value         | 初期値         |
