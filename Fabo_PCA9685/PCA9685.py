@@ -136,13 +136,14 @@ class PCA9685(object):
     '''
 
 
-    def __init__(self, bus,value=300):
+    def __init__(self, bus,value=300,address=0x40):
         '''
         bus: bus番号
         value: PCA9685に書き込む初期サーボ位置
         '''
         self.bus = bus
         value = int(value)
+        self.PCA9685_ADDRESS = address
 
         #mode1 = self.get_mode1()
         #print("before mode1:{}".format(mode1))
@@ -170,6 +171,13 @@ class PCA9685(object):
         # pca9685 = PCA9685()
         # hz = 60
         # pca9685.set_hz(hz)
+
+    def __del__(self):
+        mode = self.bus.read_byte_data(self.PCA9685_ADDRESS,self.MODE1)
+        mode = mode | self.SLEEP # sleep
+        # スリープにする
+        self.bus.write_byte_data(self.PCA9685_ADDRESS, self.MODE1, mode)
+        return
 
     def calc_prescale(self, hz):
         '''
@@ -294,4 +302,3 @@ class PCA9685(object):
         '''
         mode1 = self.bus.read_byte_data(self.PCA9685_ADDRESS,self.MODE1)
         return mode1
-
