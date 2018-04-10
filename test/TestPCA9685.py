@@ -26,18 +26,18 @@ class TestPCA9685(unittest.TestCase):
         '''
         busnum = 1 # bus番号
         init_value = 300 # 初期サーボ位置
-        self.bus = smbus.SMBus(busnum,300)
+        self.bus = smbus.SMBus(busnum)
         self.assertNotEqual(self.bus, None)
         '''
         PCA9685準備
         '''
-        self.PCA9685 = Fabo_PCA9685.PCA9685(self.bus)
+        self.PCA9685 = Fabo_PCA9685.PCA9685(self.bus,value=init_value)
         self.assertNotEqual(self.PCA9685, None)
 
         '''
         PCA9685 Hz設定
         '''
-        hz = 60
+        hz = 50
         self.PCA9685.set_hz(hz)
         value = self.PCA9685.get_hz()
         self.assertEqual(hz, value)
