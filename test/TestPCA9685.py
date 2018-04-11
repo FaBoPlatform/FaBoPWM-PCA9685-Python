@@ -62,11 +62,13 @@ class TestPCA9685(unittest.TestCase):
             self.assertEqual(hz, value)
         return
 
+    @unittest.skip("skipping")
     def test_get_mode1(self):
         mode1 = 1 # ALLCALL(0x01=1) | RESTART(0x80=128) Hz設定
         value = self.PCA9685.get_mode1()
         self.assertEqual(mode1, value)
 
+    @unittest.skip("skipping")
     def test_channel_value_min(self):
         min_value = 150
         channel = 0 # PWM0番目のピンのサーボ
@@ -75,6 +77,7 @@ class TestPCA9685(unittest.TestCase):
         self.assertEqual(min_value, value)
         time.sleep(1)
 
+    @unittest.skip("skipping")
     def test_channel_value_cen(self):
         cen_value = 300
         channel = 0 # PWM0番目のピンのサーボ
@@ -83,12 +86,63 @@ class TestPCA9685(unittest.TestCase):
         self.assertEqual(cen_value, value)
         time.sleep(1)
 
+    @unittest.skip("skipping")
     def test_channel_value_max(self):
         max_value = 600
         channel = 0 # PWM0番目のピンのサーボ
         self.PCA9685.set_channel_value(channel,max_value)
         value = self.PCA9685.get_channel_value(channel)
         self.assertEqual(max_value, value)
+        time.sleep(1)
+
+    def test_correct_channel(self):
+        min_value = 150
+        max_value = 600
+
+        for channel in range(0,16):
+            '''
+            全てのchannelをmin_valueに設定する
+            '''
+            self.PCA9685.set_channel_value(channel,min_value)
+            value = self.PCA9685.get_channel_value(channel)
+            self.assertEqual(min_value, value)
+
+        time.sleep(1)
+        for channel in range(0,16):
+            '''
+            全てのchannelの値を記録する
+            一つずつchannelをmax_valueに設定する
+            変更したchannelのvalueだけが変わっていることを確認する
+            '''
+            correct_values = []
+            for channel in range(0,16):
+                correct_values += [self.PCA9685.get_channel_value(channel)]
+
+            for write_channel in range(0,16):
+                self.PCA9685.set_channel_value(write_channel,max_value)
+                write_value = self.PCA9685.get_channel_value(write_channel)
+                correct_values[write_channel] = write_value
+                for read_channel in range(0,16):
+                    read_value = self.PCA9685.get_channel_value(read_channel)
+                    self.assertEqual(correct_values[read_channel], read_value)
+        time.sleep(1)
+        for channel in range(0,16):
+            '''
+            全てのchannelの値を記録する
+            一つずつchannelをmin_valueに設定する
+            変更したchannelのvalueだけが変わっていることを確認する
+            '''
+            correct_values = []
+            for channel in range(0,16):
+                correct_values += [self.PCA9685.get_channel_value(channel)]
+
+            for write_channel in range(0,16):
+                self.PCA9685.set_channel_value(write_channel,min_value)
+                write_value = self.PCA9685.get_channel_value(write_channel)
+                correct_values[write_channel] = write_value
+                for read_channel in range(0,16):
+                    read_value = self.PCA9685.get_channel_value(read_channel)
+                    self.assertEqual(correct_values[read_channel], read_value)
         time.sleep(1)
 
 
