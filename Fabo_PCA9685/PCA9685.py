@@ -173,10 +173,10 @@ class PCA9685(object):
         # pca9685.set_hz(hz)
 
     def __del__(self):
-        mode = self.bus.read_byte_data(self.PCA9685_ADDRESS,self.MODE1)
-        mode = mode | self.SLEEP # sleep
+        #mode = self.bus.read_byte_data(self.PCA9685_ADDRESS,self.MODE1)
+        #mode = mode | self.SLEEP # sleep
         # スリープにする
-        self.bus.write_byte_data(self.PCA9685_ADDRESS, self.MODE1, mode)
+        #self.bus.write_byte_data(self.PCA9685_ADDRESS, self.MODE1, mode)
         return
 
     def calc_prescale(self, hz):
