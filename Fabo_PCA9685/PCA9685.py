@@ -136,7 +136,7 @@ class PCA9685(object):
     '''
 
 
-    def __init__(self, bus,value=300,address=0x40):
+    def __init__(self, bus,value=300,address=0x40,osc_clock=25000000.0):
         '''
         bus: bus番号
         value: PCA9685に書き込む初期サーボ位置
@@ -144,6 +144,7 @@ class PCA9685(object):
         self.bus = bus
         value = int(value)
         self.PCA9685_ADDRESS = address
+        self.OSC_CLOCK = osc_clock
 
         #mode1 = self.get_mode1()
         #print("before mode1:{}".format(mode1))
